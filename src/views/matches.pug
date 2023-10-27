@@ -1,0 +1,80 @@
+html
+  head
+    title Matches
+    script.
+      function toggleScores(matchId, league) {
+        const team1Score = document.getElementById(`team1score-${matchId}`);
+        const team2Score = document.getElementById(`team2score-${matchId}`);
+        const updateButton = document.getElementById(`update-${matchId}`);
+
+        if (team1Score.hasAttribute('readonly')) {
+          team1Score.removeAttribute('readonly');
+          team2Score.removeAttribute('readonly');
+          updateButton.innerText = 'Save';
+          updateButton.setAttribute('onclick', `saveScores('${matchId}', '${league}')`);
+        } else {
+          team1Score.setAttribute('readonly', true);
+          team2Score.setAttribute('readonly', true);
+          updateButton.setAttribute('onclick', `toggleScores('${matchId}')`);
+        }
+      }
+       async function saveScores(matchId, league) {
+        const team1score = document.getElementById(`team1score-${matchId}`).value;
+        const team2score = document.getElementById(`team2score-${matchId}`).value;
+        
+        try {
+          const response = await fetch(`/matches/${league}/${matchId}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ team1score, team2score}),
+          });
+
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          
+          window.location.href = `/matches/${league}`;
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      }
+  body
+    h1 Matches
+    table(border="1")
+      thead
+        tr
+          th Team 1
+          th Team 2
+          th Team 1 Score
+          th Team 2 Score
+          th Update Score
+      tbody
+        each match in matches
+          tr
+            td= match.team1
+            td= match.team2
+            td
+              input(type='number', id=`team1score-${match.matchid}`, name='team1score', value=match.team1score, readonly)
+            td
+              input(type='number', id=`team2score-${match.matchid}`, name='team2score', value=match.team2score, readonly)
+            td
+              button(id=`update-${match.matchid}`, type='button', onclick=`toggleScores('${match.matchid}', '${league}')`) Set Scores
+    h1= league.replace(/-/g, ' ').toUpperCase()
+    table(border="1")
+      thead
+        tr
+          th Team
+          th Wins
+          th Draws
+          th Losses
+          th Points
+      tbody
+        each standing in standings
+          tr
+            td= standing[0]
+            td= standing[1].wins
+            td= standing[1].draws
+            td= standing[1].losses
+            td= standing[1].points

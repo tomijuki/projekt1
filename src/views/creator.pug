@@ -1,0 +1,30 @@
+html 
+    head 
+        title League Creator
+    body
+        h1 Dobrodošli! Unesite informacije o natjecanju:    
+        a(href='/', title='Home') Home   
+        br
+        form(action="/create-league" method="post")
+            label(for="leaguename") Naziv Natjecanja:
+            br
+            input(type="text" id="leaguename" name="leaguename")
+            br
+            br
+            label(for="teamnames") Popis Natjecatelja (odvojeni zarezom ili novim redom):
+            br
+            textarea(id="teamnames" name="teamnames" rows="4" cols="50")
+            br
+            br
+            label(for="scoringsystem") Sustav Bodovanja (pobjeda/remi/poraz):
+            br
+            input(type="number", id="winpoints", name="winpoints", min="0", required)
+            span /
+            input(type="number", id="tiepoints", name="tiepoints", min="0", required)
+            span /
+            input(type="number", id="losspoints", name="losspoints", min="0", required)
+            br
+            br
+            input(type="submit" value="Spremi") 
+        
+        
