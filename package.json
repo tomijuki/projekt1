@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "tsc && npm run copy-views",
+    "build": "npm install && npm run clean && tsc && npm run copy-views",
     "clean": "shx rm -rf dist",
     "copy-views": "shx cp -r src/views/ dist",
     "start": "node dist/app.js"
