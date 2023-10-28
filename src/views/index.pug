@@ -2,8 +2,9 @@ html
     head 
         title League Manager
     body
+        h1 THE LEAGUE MANAGER
         if username
-            h1 Welcome #{username}
+            h3 WELCOME #{username.toUpperCase()}
         ul 
             li: a(href='/', title='Home') Home
             li: a(href='/creator') League Creator  

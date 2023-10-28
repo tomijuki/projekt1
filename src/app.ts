@@ -71,20 +71,15 @@ app.post('/create-league', requiresAuth(), async (req, res) => {
     const client = await pool.connect();
     const { leaguename, teamnames, winpoints, tiepoints, losspoints} = req.body;
     const leagueid = uuidv4();
-    console.log(leaguename, leagueid, req.oidc.user?.nickname, winpoints, tiepoints, losspoints);
     // Insert the league name into the leagues table
     await client.query('INSERT INTO leagues (leagueid, leaguename, ownerusername, winpoints, tiepoints, losspoints) VALUES ($1, $2, $3, $4, $5, $6)', [
       leagueid,
-      leaguename,
+      leaguename.trim().toLowerCase().replace(/\s+/g, '-'),
       req.oidc.user?.nickname,
       winpoints,
       tiepoints,
       losspoints
     ]);
-
-    
-
-    console.log(teamnames);
     // Split the team names into an array
     const teams = teamnames.split(/,|\n/);
 
@@ -104,7 +99,7 @@ app.post('/create-league', requiresAuth(), async (req, res) => {
     }
 
     client.release();
-    res.redirect(`/matches/${leaguename}`);
+    res.redirect(`/matches/${leaguename.trim().toLowerCase().replace(/\s+/g, '-')}`);
   } catch (err) {
     console.error(err);
     res.send('Error ' + err);
@@ -115,9 +110,37 @@ interface Standing {
   points: number;
 }
 
-/*app.get('/leagues', requiresAuth(), async (req, res) => {
-  try{}
-});*/
+app.get('/leagues', requiresAuth(), async (req, res) => {
+  try{
+    const client = await pool.connect();
+    let username;
+    if (req.oidc.isAuthenticated()) {
+      username = req.oidc.user?.nickname;
+    }
+    const result = await client.query('SELECT leagueid, leaguename, ownerusername FROM leagues WHERE ownerusername = $1', [username]);
+    const leagues = result.rows;
+    res.render('leagues', {leagues, username} );
+    client.release();
+  } catch (err) { 
+    console.error(err);
+    res.send('Error ' + err);
+  }});
+  
+app.get('/leagues/drop/:leagueid', requiresAuth(), async (req, res) => {
+  try {
+    const client = await pool.connect();
+    const leagueId = req.params.leagueid;
+  
+    const resultMatches =await client.query('DELETE FROM matches WHERE leagueid = $1', [leagueId]);
+    const resultLeagues = await client.query('DELETE FROM leagues WHERE leagueid = $1', [leagueId]);
+    console.log(leagueId);
+    client.release();
+    res.redirect('/leagues');
+  } catch (err) {
+    console.error(err);
+    res.send('Error ' + err);
+  }
+});
 
 app.get('/matches/:league', requiresAuth(), async (req, res) => {
   try {

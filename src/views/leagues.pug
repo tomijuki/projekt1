@@ -1,0 +1,31 @@
+html
+  head
+    title Leagues
+    script.
+        function deleteLeague(leagueid) {
+                const confirmed = confirm('Are you sure you want to delete this league?');
+                if (confirmed) {
+                        window.location.href = `/leagues/drop/${leagueid}`;
+                }
+        }
+  body
+    h1 LEAGUES
+    br
+    br
+    span
+        a(href='/') Return to homepage
+    br
+    span
+        a(href='/creator') Create a new league
+    br
+    br
+    if leagues.length === 0
+            p No leagues yet
+    else
+    ul
+            each league in leagues
+                    if league.ownerusername === username
+                            li
+                                a(href=`/matches/${league.leaguename.toLowerCase().replace(/\s+/g, '_')}`)= league.leaguename 
+                                button(type='button', onclick=`deleteLeague('${league.leagueid}')`) Delete
+
