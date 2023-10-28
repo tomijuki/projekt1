@@ -24,6 +24,6 @@ html
             each league in leagues
                     if league.ownerusername === username
                             li
-                                a(href=`/matches/${league.leaguename.toLowerCase().replace(/\s+/g, '_')}`)= league.leaguename 
+                                a(href=`/leagues/${league.leaguename.toLowerCase().replace(/\s+/g, '_')}`)= league.leaguename 
                                 button(type='button', onclick=`deleteLeague('${league.leagueid}')`) Delete
 

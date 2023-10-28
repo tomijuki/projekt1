@@ -23,7 +23,7 @@ html
         const team2score = document.getElementById(`team2score-${matchId}`).value;
         
         try {
-          const response = await fetch(`/matches/${league}/${matchId}`, {
+          const response = await fetch(`/leagues/${league}/${matchId}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -35,7 +35,7 @@ html
             throw new Error('Network response was not ok');
           }
           
-          window.location.href = `/matches/${league}`;
+          window.location.href = `/leagues/${league}`;
         } catch (error) {
           console.error('Error:', error);
         }
@@ -44,6 +44,9 @@ html
     h1 MATCHES
     span
         a(href='/') Return to homepage
+    br
+    span
+        a(href='/leagues') Return to leagues
     br
     table(border="1")
       thead

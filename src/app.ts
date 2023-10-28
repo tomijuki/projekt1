@@ -15,7 +15,8 @@ app.use(express.urlencoded({extended: true}));
 app.set("views", path.join(__dirname, "views"));
 app.set('view engine', 'pug');
 
-const port = 4010;
+
+const port = process.env.PORT || 3000;
 
 const pool = new Pool({
   user: 'ferweb',
@@ -99,7 +100,7 @@ app.post('/create-league', requiresAuth(), async (req, res) => {
     }
 
     client.release();
-    res.redirect(`/matches/${leaguename.trim().toLowerCase().replace(/\s+/g, '-')}`);
+    res.redirect(`/leagues/${leaguename.trim().toLowerCase().replace(/\s+/g, '-')}`);
   } catch (err) {
     console.error(err);
     res.send('Error ' + err);
@@ -142,7 +143,7 @@ app.get('/leagues/drop/:leagueid', requiresAuth(), async (req, res) => {
   }
 });
 
-app.get('/matches/:league', requiresAuth(), async (req, res) => {
+app.get('/leagues/:league', requiresAuth(), async (req, res) => {
   try {
     let username;
     if (req.oidc.isAuthenticated()) {
@@ -208,7 +209,7 @@ app.get('/matches/:league', requiresAuth(), async (req, res) => {
   }
 });
 
-app.post('/matches/:league/:matchid', async (req, res) => {
+app.post('/leagues/:league/:matchid', async (req, res) => {
   try {
     const { league, matchid } = req.params;
     const { team1score, team2score } = req.body;
@@ -221,13 +222,13 @@ app.post('/matches/:league/:matchid', async (req, res) => {
     ]);
 
     client.release();
-    res.redirect(`/matches/${league}`);
+    res.redirect(`/leagues/${league}`);
   } catch (err) {
     console.error(err);
     res.send('Error ' + err);
   }
 });
 
-http.createServer(app).listen(process.env.PORT, () => {
-  console.log(`Server started on port ${process.env.PORT}`);
+http.createServer(app).listen(process.env.PORT || 3000, () => {
+  console.log(`Server started on port ${process.env.PORT || 3000}`);
 });
