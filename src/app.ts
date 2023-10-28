@@ -7,6 +7,7 @@ import bodyParser from 'body-parser';
 import {Pool} from 'pg';
 import { auth, requiresAuth } from 'express-openid-connect'; 
 import dotenv from 'dotenv'
+import { match } from 'assert';
 dotenv.config()
 
 const app = express();
@@ -70,8 +71,13 @@ app.get("/sign-up", (req, res) => {
 app.post('/create-league', requiresAuth(), async (req, res) => {
   try {
     const client = await pool.connect();
-    const { leaguename, teamnames, winpoints, tiepoints, losspoints} = req.body;
+    const { leaguename, teamnames, winpoints, tiepoints, losspoints } = req.body;
     const leagueid = uuidv4();
+    const teams = teamnames.split(/,|\n/);
+
+    const numTeams = teams.length;
+    const matchesByMatchday: { [key: string]: string[] } = {};
+
     // Insert the league name into the leagues table
     await client.query('INSERT INTO leagues (leagueid, leaguename, ownerusername, winpoints, tiepoints, losspoints) VALUES ($1, $2, $3, $4, $5, $6)', [
       leagueid,
@@ -81,22 +87,40 @@ app.post('/create-league', requiresAuth(), async (req, res) => {
       tiepoints,
       losspoints
     ]);
-    // Split the team names into an array
-    const teams = teamnames.split(/,|\n/);
 
+    // Create matches using round-robin scheduling to minimize match days
+    let matchdayCount = 1;
+    for (let day = 0; day < numTeams - 1; day++) {
+      for (let i = 0; i < numTeams / 2; i++) {
+        const team1 = teams[i];
+        const team2 = teams[numTeams - 1 - i];
 
-    // Create matches for each pair of teams
-    for (let i = 0; i < teams.length; i++) {
-      for (let j = i + 1; j < teams.length; j++) {
-        await client.query('INSERT INTO matches (matchid, team1, team2, team1score, team2score, leagueid) VALUES ($1, $2, $3, $4, $5, $6)', [
+        // Ensure no repeated match on the same match day
+        if (!matchesByMatchday[matchdayCount.toString()]) {
+          matchesByMatchday[matchdayCount.toString()] = [];
+        } else {
+          while (matchesByMatchday[matchdayCount.toString()].includes(team1) || matchesByMatchday[matchdayCount.toString()].includes(team2)) {
+            matchdayCount++;
+            if (!matchesByMatchday[matchdayCount.toString()]) {
+              matchesByMatchday[matchdayCount.toString()] = [];
+            }
+          }
+        }
+
+        matchesByMatchday[matchdayCount.toString()].push(team1, team2);
+
+        await client.query('INSERT INTO matches (matchid, team1, team2, team1score, team2score, leagueid, matchday) VALUES ($1, $2, $3, $4, $5, $6, $7)', [
           uuidv4(),
-          teams[i].trim(),
-          teams[j].trim(),
+          team1,
+          team2,
           null,
           null,
-          leagueid
+          leagueid,
+          matchdayCount
         ]);
       }
+      teams.splice(1, 0, teams.pop());
+      matchdayCount++;
     }
 
     client.release();
@@ -165,10 +189,14 @@ app.get('/leagues/:league', requiresAuth(), async (req, res) => {
       // Redirect or render an error page if access is not permitted
       return res.render('error', { message: 'You do not have permission to access this tournament.' });
     }
-    const result = await client.query('SELECT matchid, team1, team2, team1score, team2score FROM matches WHERE leagueid = (SELECT leagueid FROM leagues WHERE leaguename = $1) ORDER BY matchid ASC', [league]);
+    const result = await client.query('SELECT matchid, team1, team2, team1score, team2score, matchday FROM matches WHERE leagueid = (SELECT leagueid FROM leagues WHERE leaguename = $1) ORDER BY matchid ASC', [league]);
     const matches = result.rows;
-    
-    console.log(matches);
+    const matchdaysCount = await client.query('SELECT MAX(matchday) FROM matches WHERE leagueid = (SELECT leagueid FROM leagues WHERE leaguename = $1)', [league]);
+    const matchdays = [];
+    for (let i = 1; i <= matchdaysCount.rows[0].max; i++) {
+      matchdays.push(i);
+    };
+    console.log(matchdays)
 
     const standings: Record<string, Standing & { wins: number; draws: number; losses: number }> = {};
     matches.forEach((match) => {
@@ -200,8 +228,8 @@ app.get('/leagues/:league', requiresAuth(), async (req, res) => {
     });
 
     const sortedStandings = Object.entries(standings).sort((a, b) => b[1].points - a[1].points);
-
-    res.render('matches', { matches, standings: sortedStandings, league });
+    
+    res.render('matches', { matchdays, matches, standings: sortedStandings, league });
     client.release();
   } catch (err) {
     console.error(err);

@@ -48,25 +48,28 @@ html
     span
         a(href='/leagues') Return to leagues
     br
-    table(border="1")
-      thead
-        tr
-          th Team 1
-          th Team 2
-          th Team 1 Score
-          th Team 2 Score
-          th Update Score
-      tbody
-        each match in matches
+    each i in matchdays
+      h2 Matchday #{i}
+      table(border="1")
+        thead
           tr
-            td= match.team1
-            td= match.team2
-            td
-              input(type='number', id=`team1score-${match.matchid}`, name='team1score', value=match.team1score, readonly)
-            td
-              input(type='number', id=`team2score-${match.matchid}`, name='team2score', value=match.team2score, readonly)
-            td
-              button(id=`update-${match.matchid}`, type='button', onclick=`toggleScores('${match.matchid}', '${league}')`) Set Scores
+            th Team 1
+            th Team 2
+            th Team 1 Score
+            th Team 2 Score
+            th Update Score
+        tbody
+          each match in matches
+            if match.matchday === i
+              tr
+                td= match.team1
+                td= match.team2
+                td
+                  input(type='number', id=`team1score-${match.matchid}`, name='team1score', value=match.team1score, readonly)
+                td
+                  input(type='number', id=`team2score-${match.matchid}`, name='team2score', value=match.team2score, readonly)
+                td
+                  button(id=`update-${match.matchid}`, type='button', onclick=`toggleScores('${match.matchid}', '${league}')`) Set Scores
     h1= league.replace(/-/g, ' ').toUpperCase()
     table(border="1")
       thead
