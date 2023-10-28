@@ -7,17 +7,17 @@ html
         br
         br
         form(action="/create-league" method="post")
-            label(for="leaguename") Naziv Natjecanja:
+            label(for="leaguename") League name:
             br
             input(type="text" id="leaguename" name="leaguename")
             br
             br
-            label(for="teamnames") Popis Natjecatelja (odvojeni zarezom ili novim redom):
+            label(for="teamnames") Teams (seperated by a comma or new line):
             br
             textarea(id="teamnames" name="teamnames" rows="4" cols="50")
             br
             br
-            label(for="scoringsystem") Sustav Bodovanja (pobjeda/remi/poraz):
+            label(for="scoringsystem") Point system (win/tie/loss):
             br
             input(type="number", id="winpoints", name="winpoints", min="0", required)
             span /
@@ -26,6 +26,6 @@ html
             input(type="number", id="losspoints", name="losspoints", min="0", required)
             br
             br
-            input(type="submit" value="Spremi") 
+            input(type="submit" value="Save League") 
         
         

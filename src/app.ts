@@ -73,7 +73,12 @@ app.post('/create-league', requiresAuth(), async (req, res) => {
     const client = await pool.connect();
     const { leaguename, teamnames, winpoints, tiepoints, losspoints } = req.body;
     const leagueid = uuidv4();
-    const teams = teamnames.split(/,|\n/);
+    let teams = teamnames.split(/,|\n/);
+
+    // If the number of teams is odd, add a 'bye' team to ensure even numbers
+    if (teams.length % 2 !== 0) {
+      teams.push('Bye');
+    }
 
     const numTeams = teams.length;
     const matchesByMatchday: { [key: string]: string[] } = {};
@@ -88,39 +93,36 @@ app.post('/create-league', requiresAuth(), async (req, res) => {
       losspoints
     ]);
 
-    // Create matches using round-robin scheduling to minimize match days
-    let matchdayCount = 1;
-    for (let day = 0; day < numTeams - 1; day++) {
-      for (let i = 0; i < numTeams / 2; i++) {
+    const totalRounds = numTeams - 1;
+    const matchesPerRound = numTeams / 2;
+
+    for (let round = 0; round < totalRounds; round++) {
+      const matchdayCount = round + 1;
+      matchesByMatchday[matchdayCount.toString()] = [];
+
+      for (let i = 0; i < matchesPerRound; i++) {
         const team1 = teams[i];
         const team2 = teams[numTeams - 1 - i];
 
-        // Ensure no repeated match on the same match day
-        if (!matchesByMatchday[matchdayCount.toString()]) {
-          matchesByMatchday[matchdayCount.toString()] = [];
-        } else {
-          while (matchesByMatchday[matchdayCount.toString()].includes(team1) || matchesByMatchday[matchdayCount.toString()].includes(team2)) {
-            matchdayCount++;
-            if (!matchesByMatchday[matchdayCount.toString()]) {
-              matchesByMatchday[matchdayCount.toString()] = [];
-            }
-          }
+        if (team1 !== 'Bye' && team2 !== 'Bye') {
+          matchesByMatchday[matchdayCount.toString()].push(team1, team2);
+
+          await client.query('INSERT INTO matches (matchid, team1, team2, team1score, team2score, leagueid, matchday) VALUES ($1, $2, $3, $4, $5, $6, $7)', [
+            uuidv4(),
+            team1,
+            team2,
+            null,
+            null,
+            leagueid,
+            matchdayCount
+          ]);
         }
-
-        matchesByMatchday[matchdayCount.toString()].push(team1, team2);
-
-        await client.query('INSERT INTO matches (matchid, team1, team2, team1score, team2score, leagueid, matchday) VALUES ($1, $2, $3, $4, $5, $6, $7)', [
-          uuidv4(),
-          team1,
-          team2,
-          null,
-          null,
-          leagueid,
-          matchdayCount
-        ]);
       }
-      teams.splice(1, 0, teams.pop());
-      matchdayCount++;
+
+      // Rotate the teams, except for the first team
+      const firstTeam = teams.shift();
+      teams.push(teams.shift());
+      teams.unshift(firstTeam);
     }
 
     client.release();
@@ -158,7 +160,6 @@ app.get('/leagues/drop/:leagueid', requiresAuth(), async (req, res) => {
   
     const resultMatches =await client.query('DELETE FROM matches WHERE leagueid = $1', [leagueId]);
     const resultLeagues = await client.query('DELETE FROM leagues WHERE leagueid = $1', [leagueId]);
-    console.log(leagueId);
     client.release();
     res.redirect('/leagues');
   } catch (err) {
@@ -196,7 +197,6 @@ app.get('/leagues/:league', requiresAuth(), async (req, res) => {
     for (let i = 1; i <= matchdaysCount.rows[0].max; i++) {
       matchdays.push(i);
     };
-    console.log(matchdays)
 
     const standings: Record<string, Standing & { wins: number; draws: number; losses: number }> = {};
     matches.forEach((match) => {

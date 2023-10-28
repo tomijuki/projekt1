@@ -6,12 +6,13 @@ html
         if username
             h3 WELCOME #{username.toUpperCase()}
         ul 
-            li: a(href='/', title='Home') Home
             li: a(href='/creator') League Creator  
             li: a(href='/leagues') Leagues          
             if username
+                br
                 li: form(action="/logout", method="get")
                     input(type="submit", value="Logout " + username)
             else
+                li: a(href='/login', title='Login') Login
                 li: a(href='/sign-up', title='Sign up') Sign up 
         
