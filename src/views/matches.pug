@@ -2,39 +2,42 @@ html
     head
       title Matches
       script.
-        function share(league, shared) {
+        async function share(league, shared) {
           if(!shared){
             console.log(`/leagues/share/${league}`); // log the sharing message
-            fetch(`/leagues/share/${league}`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            })
-            .then(response => {
+            try {
+              const response = await fetch('/leagues/share', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ league }),
+              });
+
               if (!response.ok) {
-                throw new Error('Failed to share league');
+                throw new Error('Network response was not ok');
               }
-              return response.json();
-            })
-            .then(data => {
-              console.log(data.message); // log the success message
-              const shareButton = document.getElementById(`share-${league}`);
-              shareButton.innerText = 'League Shared';
-              shareButton.disabled = true; // disable the button after sharing
-            })
-            .catch(error => {
+              copyLink(`${window.location.origin}/shared/${league}`, league)
+            } catch (error) {
               console.error('Error:', error);
-            });
-        }}
+            }
+          } else {
+            copyLink(`${window.location.origin}/shared/${league}`, league)
+          }
+        }
 
         function copyLink(url, league) {
           const shareable = document.getElementById('shareable');
           const shareButton = document.getElementById(`share-${league}`);
+          const el = document.createElement('textarea');
+          el.value = url;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand('copy');
+          document.body.removeChild(el);
           shareable.innerText = url;
           shareable.setAttribute('href', url);
           shareable.style.display = 'inline';
-          shareable.style.display = 'none';
           shareButton.innerText = 'Copied!';
           setTimeout(() => {
             shareButton.innerText = 'Copy Link';
@@ -95,7 +98,7 @@ html
       else
         span
             button(id=`share-${league}`, type='button', onclick=`share('${league}', ${shared})`) Copy Link
-            a(id='shareable' href=`http://localhost:4010/shared/leagues/${league}`) https://tjukic-projekt1.onrender.com/shared/leagues/${league}
+            a(id='shareable' href=`https://tjukic-projekt1.onrender.com/shared/${league}`) https://tjukic-projekt1.onrender.com/shared/#{league}
       br
       each i in matchdays
         h4 Matchday #{i}

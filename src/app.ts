@@ -1,13 +1,10 @@
 import express from 'express';
-import fs from 'fs';
 import path from 'path'
 import http from 'http';
 import { v4 as uuidv4 } from 'uuid';
-import bodyParser from 'body-parser';
 import {Pool} from 'pg';
 import { auth, requiresAuth } from 'express-openid-connect'; 
 import dotenv from 'dotenv'
-import { match } from 'assert';
 dotenv.config()
 
 const app = express();
@@ -20,10 +17,10 @@ app.set('view engine', 'pug');
 const port = process.env.PORT || 3000;
 
 const pool = new Pool({
-  user: 'ferweb',
+  user: process.env.DB_USER,
   host: 'frankfurt-postgres.render.com',
   database: 'tjukic_tournament',
-  password: 'igvrjDkqFlLe4e4wMdnzlJXv7n9qg6Y8',
+  password: process.env.DB_PASSWORD,
   port: 5432,
   ssl: {
     rejectUnauthorized: false // Add this line if your SSL certificate is self-signed or not fully trusted
@@ -258,12 +255,17 @@ app.post('/leagues/:league/:matchid', requiresAuth(), async (req, res) => {
   }
 });
 
-app.post('/leagues/share/:league', requiresAuth(), async (req, res) => {
-  const { league } = req.params;
-  console.log(league);
+app.post('/leagues/share', requiresAuth(), async (req, res) => {
   try {
     const client = await pool.connect();
-    await client.query("UPDATE leagues SET shared = true WHERE leaguename = $1)", [league]); 
+    const league = req.body.league;
+    
+    // Retrieve the league ID (UUID) based on the league name
+    const leagueResult = await client.query('SELECT leagueid FROM leagues WHERE leaguename = $1', [league]);
+    const leagueId = leagueResult.rows[0].leagueid;
+
+    // Use the league ID to perform the update
+    await client.query('UPDATE leagues SET shared = true WHERE leagueid = $1', [leagueId]);
     client.release();
     res.sendStatus(200);
   } catch (err) {
@@ -275,7 +277,7 @@ app.post('/leagues/share/:league', requiresAuth(), async (req, res) => {
 
 
 
-app.get('/shared/leagues/:league', async (req, res) => {
+app.get('/shared/:league', async (req, res) => {
   try {
     const { league } = req.params;
     const client = await pool.connect();
