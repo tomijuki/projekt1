@@ -1,89 +1,138 @@
 html
-  head
-    title Matches
-    script.
-      function toggleScores(matchId, league) {
-        const team1Score = document.getElementById(`team1score-${matchId}`);
-        const team2Score = document.getElementById(`team2score-${matchId}`);
-        const updateButton = document.getElementById(`update-${matchId}`);
+    head
+      title Matches
+      script.
+        function share(league, shared) {
+          if(!shared){
+            console.log(`/leagues/share/${league}`); // log the sharing message
+            fetch(`/leagues/share/${league}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Failed to share league');
+              }
+              return response.json();
+            })
+            .then(data => {
+              console.log(data.message); // log the success message
+              const shareButton = document.getElementById(`share-${league}`);
+              shareButton.innerText = 'League Shared';
+              shareButton.disabled = true; // disable the button after sharing
+            })
+            .catch(error => {
+              console.error('Error:', error);
+            });
+        }}
 
-        if (team1Score.hasAttribute('readonly')) {
-          team1Score.removeAttribute('readonly');
-          team2Score.removeAttribute('readonly');
-          updateButton.innerText = 'Save';
-          updateButton.setAttribute('onclick', `saveScores('${matchId}', '${league}')`);
-        } else {
-          team1Score.setAttribute('readonly', true);
-          team2Score.setAttribute('readonly', true);
-          updateButton.setAttribute('onclick', `toggleScores('${matchId}')`);
+        function copyLink(url, league) {
+          const shareable = document.getElementById('shareable');
+          const shareButton = document.getElementById(`share-${league}`);
+          shareable.innerText = url;
+          shareable.setAttribute('href', url);
+          shareable.style.display = 'inline';
+          shareable.style.display = 'none';
+          shareButton.innerText = 'Copied!';
+          setTimeout(() => {
+            shareButton.innerText = 'Copy Link';
+          }, 2000);
         }
-      }
-       async function saveScores(matchId, league) {
-        const team1score = document.getElementById(`team1score-${matchId}`).value;
-        const team2score = document.getElementById(`team2score-${matchId}`).value;
-        
-        try {
-          const response = await fetch(`/leagues/${league}/${matchId}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ team1score, team2score}),
-          });
 
-          if (!response.ok) {
-            throw new Error('Network response was not ok');
+        function toggleScores(matchId, league) {
+          const team1Score = document.getElementById(`team1score-${matchId}`);
+          const team2Score = document.getElementById(`team2score-${matchId}`);
+          const updateButton = document.getElementById(`update-${matchId}`);
+
+          if (team1Score.hasAttribute('readonly')) {
+            team1Score.removeAttribute('readonly');
+            team2Score.removeAttribute('readonly');
+            updateButton.innerText = 'Save';
+            updateButton.setAttribute('onclick', `saveScores('${matchId}', '${league}')`);
+          } else {
+            team1Score.setAttribute('readonly', true);
+            team2Score.setAttribute('readonly', true);
+            updateButton.setAttribute('onclick', `toggleScores('${matchId}')`);
           }
-          
-          window.location.href = `/leagues/${league}`;
-        } catch (error) {
-          console.error('Error:', error);
         }
-      }
-  body
-    h1 MATCHES
-    span
-        a(href='/') Return to homepage
-    br
-    span
-        a(href='/leagues') Return to leagues
-    br
-    each i in matchdays
-      h4 Matchday #{i}
+
+        async function saveScores(matchId, league) {
+          const team1score = document.getElementById(`team1score-${matchId}`).value;
+          const team2score = document.getElementById(`team2score-${matchId}`).value;
+          
+          try {
+            const response = await fetch(`/leagues/${league}/${matchId}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ team1score, team2score}),
+            });
+
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            
+            window.location.href = `/leagues/${league}`;
+          } catch (error) {
+            console.error('Error:', error);
+          }
+        }
+    body
+      h1 MATCHES
+      span
+          a(href='/') Return to homepage
+      br
+      span
+          a(href='/leagues') Return to leagues
+      br
+      if !shared
+        span
+            button(id=`share-${league}`, type='button', onclick=`share('${league}', ${shared})`) Share League
+            a(id='shareable' href='#')
+      else
+        span
+            button(id=`share-${league}`, type='button', onclick=`share('${league}', ${shared})`) Copy Link
+            a(id='shareable' href=`http://localhost:4010/shared/leagues/${league}`) https://tjukic-projekt1.onrender.com/shared/leagues/${league}
+      br
+      each i in matchdays
+        h4 Matchday #{i}
+        table(border="1")
+          thead
+            tr
+              th Team 1
+              th Team 2
+              th Team 1 Score
+              th Team 2 Score
+              th Update Score
+          tbody
+            each match in matches
+              if match.matchday === i
+                tr
+                  td= match.team1
+                  td= match.team2
+                  td
+                    input(type='number', id=`team1score-${match.matchid}`, name='team1score', value=match.team1score, readonly)
+                  td
+                    input(type='number', id=`team2score-${match.matchid}`, name='team2score', value=match.team2score, readonly)
+                  td
+                    button(id=`update-${match.matchid}`, type='button', onclick=`toggleScores('${match.matchid}', '${league}')`) Set Scores
+      h1= league.replace(/-/g, ' ').toUpperCase()
       table(border="1")
         thead
           tr
-            th Team 1
-            th Team 2
-            th Team 1 Score
-            th Team 2 Score
-            th Update Score
+            th Team
+            th Wins
+            th Draws
+            th Losses
+            th Points
         tbody
-          each match in matches
-            if match.matchday === i
-              tr
-                td= match.team1
-                td= match.team2
-                td
-                  input(type='number', id=`team1score-${match.matchid}`, name='team1score', value=match.team1score, readonly)
-                td
-                  input(type='number', id=`team2score-${match.matchid}`, name='team2score', value=match.team2score, readonly)
-                td
-                  button(id=`update-${match.matchid}`, type='button', onclick=`toggleScores('${match.matchid}', '${league}')`) Set Scores
-    h1= league.replace(/-/g, ' ').toUpperCase()
-    table(border="1")
-      thead
-        tr
-          th Team
-          th Wins
-          th Draws
-          th Losses
-          th Points
-      tbody
-        each standing in standings
-          tr
-            td= standing[0]
-            td= standing[1].wins
-            td= standing[1].draws
-            td= standing[1].losses
-            td= standing[1].points
+          each standing in standings
+            tr
+              td= standing[0]
+              td= standing[1].wins
+              td= standing[1].draws
+              td= standing[1].losses
+              td= standing[1].points
