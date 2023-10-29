@@ -31,9 +31,9 @@ const config = {
   authRequired : false,
   idpLogout : true, //login not only from the app, but also from identity provider
   secret: process.env.SECRET,
-  baseURL: `${process.env.BASE_URL}:${process.env.PORT}`,
+  baseURL: `${process.env.BASE_URL}`,
   clientID: process.env.CLIENT_ID,
-  issuerBaseURL: 'https://tomijuki.eu.auth0.com',
+  issuerBaseURL: `${process.env.ISSUER_BASE_URL}`,
   clientSecret: process.env.CLIENT_SECRET,
   authorizationParams: {
     response_type: 'code' ,

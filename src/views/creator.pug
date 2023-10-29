@@ -1,6 +1,18 @@
 html 
     head 
         title League Creator
+        script. 
+            function validateForm() {
+                let teams = document.getElementById('teamnames').value.split(/,|\n/).filter(team => team.trim() !== '');
+
+                if (teams.length < 4 || teams.length > 8) {
+                    document.getElementById('submitBtn').disabled = true;
+                    return false;
+                } else {
+                    document.getElementById('submitBtn').disabled = false;
+                    return true;
+                }
+            }
     body
         h1 LEAGUE CREATOR
         a(href='/', title='Home') Return to homepage   
@@ -9,12 +21,12 @@ html
         form(action="/create-league" method="post")
             label(for="leaguename") League name:
             br
-            input(type="text" id="leaguename" name="leaguename")
+            input(type="text" id="leaguename" name="leaguename" required)
             br
             br
-            label(for="teamnames") Teams (seperated by a comma or new line):
+            label(for="teamnames") Teams (seperated by a comma or new line, 4 to 8 teams):
             br
-            textarea(id="teamnames" name="teamnames" rows="4" cols="50")
+            textarea(id="teamnames" name="teamnames" rows="4" cols="50" oninput="validateForm()")
             br
             br
             label(for="scoringsystem") Point system (win/tie/loss):
@@ -26,6 +38,6 @@ html
             input(type="number", id="losspoints", name="losspoints", min="0", required)
             br
             br
-            input(type="submit" value="Save League") 
+            input(disabled type="submit" id="submitBtn" value="Save League") 
         
         
